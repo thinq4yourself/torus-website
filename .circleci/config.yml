@@ -203,7 +203,7 @@ jobs:
             tar czf - dist/ | ssh torus@lrc.tor.us "cat > ~/lrc-torus-website/dist.tgz"
             ssh torus@lrc.tor.us "cd ~/lrc-torus-website && tar zxvf dist.tgz"
   deploy-alpha:
-    <<: *job_common
+    <<: *job_common_base
     steps:
       - attach_workspace:
           at: ~/torus-website
