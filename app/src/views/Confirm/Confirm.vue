@@ -3,10 +3,10 @@
     <template v-if="type === TX_TRANSACTION">
       <v-layout wrap align-center mx-6 mb-6>
         <v-flex xs12 class="text_1--text font-weight-bold headline float-left" :class="isLightHeader ? 'text--lighten-3' : ''">
-          {{ t('dappTransfer.permission') }}
+          {{ t('dappTransfer.confirmation') }}
         </v-flex>
         <v-flex xs12>
-          <network-display :network="network" :storeNetworkType="network"></network-display>
+          <NetworkDisplay :store-network-type="network"></NetworkDisplay>
         </v-flex>
       </v-layout>
       <v-layout wrap>
@@ -27,20 +27,27 @@
             </div>
           </v-flex>
         </template>
+        <template v-else-if="transactionCategory === TOKEN_METHOD_APPROVE">
+          <v-flex xs12 mb-4 mx-6>
+            <div class="subtitle-1 float-left">
+              {{ `${t('dappPermission.allow')} ${origin.hostname} ${t('dappTransfer.toSpend')} ${selectedToken} ${t('dappTransfer.onYourBehalf')}?` }}
+            </div>
+          </v-flex>
+        </template>
         <v-flex v-else xs12 mb-4 mx-6>
           <div class="subtitle-2">{{ t('dappTransfer.amount') }}</div>
           <v-divider></v-divider>
           <div>
             <span class="subtitle-2 float-left text_2--text">
-              <show-tool-tip
+              <ShowToolTip
                 v-if="[TOKEN_METHOD_APPROVE, TOKEN_METHOD_TRANSFER, TOKEN_METHOD_TRANSFER_FROM].indexOf(transactionCategory) >= 0"
                 :address="amountTo"
               >
                 {{ displayAmountTo }}
-              </show-tool-tip>
-              <show-tool-tip v-else-if="[SEND_ETHER_ACTION_KEY, CONTRACT_INTERACTION_KEY].indexOf(transactionCategory) >= 0" :address="receiver">
+              </ShowToolTip>
+              <ShowToolTip v-else-if="[SEND_ETHER_ACTION_KEY, CONTRACT_INTERACTION_KEY].indexOf(transactionCategory) >= 0" :address="receiver">
                 {{ displayAmountTo }}
-              </show-tool-tip>
+              </ShowToolTip>
               <span v-else class="subtitle-2 float-left text_2--text">{{ displayAmountTo }}</span>
             </span>
             <span class="subtitle-2 float-right">{{ displayAmountValue }}</span>
@@ -50,12 +57,12 @@
         <v-flex px-2>
           <TransactionSpeedSelect
             :gas="gasEstimate"
-            :displayAmount="value"
-            :activeGasPriceConfirm="gasPrice"
-            @onSelectSpeed="onSelectSpeed"
-            :selectedCurrency="selectedCurrency"
-            :currencyMultiplier="getCurrencyMultiplier"
+            :display-amount="value"
+            :active-gas-price-confirm="gasPrice"
+            :selected-currency="selectedCurrency"
+            :currency-multiplier="getCurrencyMultiplier"
             :symbol="'ETH'"
+            @onSelectSpeed="onSelectSpeed"
           />
         </v-flex>
         <v-flex xs12 px-6 mt-4 mb-1>
@@ -65,8 +72,8 @@
             <span class="subtitle-2">{{ t('dappTransfer.constOfTrans') }}</span>
             <span class="subtitle-1 float-right primary--text font-weight-bold">{{ costOfTransaction }}</span>
           </div>
-          <div v-if="isOtherToken" class="clearfix">
-            <span class="subtitle-1 float-right primary--text font-weight-bold">+ {{ significantDigits(this.gasCost) }} ETH</span>
+          <div v-if="isOtherToken && transactionCategory !== TOKEN_METHOD_APPROVE" class="clearfix">
+            <span class="subtitle-1 float-right primary--text font-weight-bold">+ {{ significantDigits(gasCost) }} ETH</span>
           </div>
           <div class="caption float-right clearfix">{{ costOfTransactionConverted }}</div>
         </v-flex>
@@ -97,20 +104,20 @@
                     <span class="float-right mr-4">:</span>
                   </v-flex>
                   <v-flex id="type" xs8 sm10 class="text_2--text">{{ header }}</v-flex>
-                  <v-flex xs2 v-if="txData || txDataParams !== ''">
+                  <v-flex v-if="txData || txDataParams !== ''" xs2>
                     {{ t('dappTransfer.data') }}
                     <span class="float-right mr-4">:</span>
                   </v-flex>
                   <v-flex xs12 mt-1>
-                    <v-card flat color="background_3" v-if="txDataParams !== ''">
+                    <v-card v-if="txDataParams !== ''" flat color="background_3">
                       <v-card-text>
                         <pre>{{ txDataParams }}</pre>
                       </v-card-text>
                     </v-card>
                   </v-flex>
-                  <v-flex xs12 mt-4 v-if="txData">
+                  <v-flex v-if="txData" xs12 mt-4>
                     <div class="mb-1">Hex {{ t('dappTransfer.data') }}:</div>
-                    <v-card flat color="background_3" style="word-break: break-all">
+                    <v-card flat color="background_3" style="word-break: break-all;">
                       <v-card-text>{{ txData }}</v-card-text>
                     </v-card>
                   </v-flex>
@@ -123,15 +130,15 @@
             </v-card>
           </v-dialog>
         </v-flex>
-        <v-flex xs12 px-6 mb-6 class="text-right" v-if="topUpErrorShow || canShowError">
+        <v-flex v-if="topUpErrorShow || canShowError" xs12 px-6 mb-6 class="text-right">
           <div class="caption error--text">{{ errorMsg }}</div>
-          <div class="caption mt-1" v-if="topUpErrorShow">
+          <div v-if="topUpErrorShow" class="caption mt-1">
             {{ t('dappTransfer.pleaseTopup1') }}
             <v-btn color="primary" class="mx-1 px-2 caption" small outlined @click="topUp">{{ t('dappTransfer.pleaseTopup2') }}</v-btn>
             {{ t('dappTransfer.pleaseTopup3') }}
           </div>
         </v-flex>
-        <v-flex xs12 px-6 mb-6 v-if="transactionCategory === TOKEN_METHOD_APPROVE">
+        <v-flex v-if="transactionCategory === TOKEN_METHOD_APPROVE" xs12 px-6 mb-6>
           <div class="caption error--text">{{ `${t('dappTransfer.byConfirming1')} ${displayAmountValue} ${t('dappTransfer.byConfirming2')}.` }}</div>
         </v-flex>
         <v-layout px-6>
@@ -145,18 +152,18 @@
                   {{ t('dappTransfer.confirm') }}
                 </v-btn>
               </template>
-              <transfer-confirm
-                :toAddress="receiver"
-                :convertedAmount="displayAmountConverted"
-                :displayAmount="displayAmountValue"
-                :speedSelected="speed"
-                :assetSelected="assetDetails"
-                :isNonFungibleToken="isNonFungibleToken"
-                :transactionFee="txFees"
-                :selectedCurrency="selectedCurrency"
+              <TransferConfirm
+                :to-address="receiver"
+                :converted-amount="displayAmountConverted"
+                :display-amount="displayAmountValue"
+                :speed-selected="speed"
+                :asset-selected="assetDetails"
+                :is-non-fungible-token="isNonFungibleToken"
+                :transaction-fee="txFees"
+                :selected-currency="selectedCurrency"
                 @onClose="confirmDialog = false"
                 @onConfirm="triggerSign"
-              ></transfer-confirm>
+              ></TransferConfirm>
             </v-dialog>
           </v-flex>
         </v-layout>
@@ -166,9 +173,9 @@
     <template v-if="type === TX_PERSONAL_MESSAGE || type === TX_MESSAGE || type === TX_TYPED_MESSAGE">
       <!-- <permission-confirm @triggerSign="triggerSign" @triggerDeny="triggerDeny" /> -->
       <v-layout wrap align-center mx-6 mb-6>
-        <v-flex xs12 class="text_1--text font-weight-bold headline float-left">{{ t('dappTransfer.permissions') }}</v-flex>
+        <v-flex xs12 class="text_1--text font-weight-bold headline float-left">{{ t('dappTransfer.permission') }}</v-flex>
         <v-flex xs12>
-          <network-display :network="network" :storeNetworkType="network"></network-display>
+          <NetworkDisplay :store-network-type="network"></NetworkDisplay>
         </v-flex>
       </v-layout>
       <v-layout wrap>
@@ -189,7 +196,7 @@
 
         <v-flex xs12 mt-0 mb-n1 mx-6 class="note-list">
           <div class="d-flex">
-            <div class="mr-5 note-list__icon">
+            <div class="mr-2 note-list__icon">
               <img :src="require(`../../../public/img/icons/check-circle-primary.svg`)" width="12" />
             </div>
             <div class="caption text_2--text">{{ t('dappTransfer.dataSmall') }}</div>
@@ -201,14 +208,14 @@
               <v-list-item-content flat class="pa-1 background" :class="$vuetify.theme.dark ? 'lighten-4' : 'lighten-3'">
                 <v-card flat class="body-2 text-left pa-2 word-break typedMessageBox">
                   <v-expansion-panels v-if="type === TX_PERSONAL_MESSAGE || type === TX_MESSAGE">
-                    <p :class="$vuetify.theme.dark ? 'text_1--text' : 'text_2--text'" style="text-align:left">{{ message }}</p>
+                    <p :class="$vuetify.theme.dark ? 'text_1--text' : 'text_2--text'" style="text-align: left;">{{ message }}</p>
                   </v-expansion-panels>
 
                   <v-expansion-panels v-else-if="type === TX_TYPED_MESSAGE && !Array.isArray(typedMessages)">
-                    <v-expansion-panel v-for="(value, index) in typedMessages" :key="index">
+                    <v-expansion-panel v-for="(typedMessage, index) in typedMessages" :key="index">
                       <v-expansion-panel-header>{{ index }}</v-expansion-panel-header>
                       <v-expansion-panel-content>
-                        <vue-json-pretty :path="'res'" :data="value" :showline="true" :deep="5"></vue-json-pretty>
+                        <VueJsonPretty :path="'res'" :data="typedMessage" :showline="true" :deep="5"></VueJsonPretty>
                       </v-expansion-panel-content>
                     </v-expansion-panel>
                   </v-expansion-panels>
@@ -216,8 +223,8 @@
                   <v-expansion-panels v-else-if="type === TX_TYPED_MESSAGE && Array.isArray(typedMessages)">
                     <v-expansion-panel>
                       <v-expansion-panel-header>{{ t('dappTransfer.dataSmall') }}</v-expansion-panel-header>
-                      <v-expansion-panel-content v-for="(value, index) in typedMessages" :key="index">
-                        <vue-json-pretty :path="'res'" :data="value" :showline="true" :deep="5"></vue-json-pretty>
+                      <v-expansion-panel-content v-for="(typedMessage, index) in typedMessages" :key="index">
+                        <VueJsonPretty :path="'res'" :data="typedMessage" :showline="true" :deep="5"></VueJsonPretty>
                       </v-expansion-panel-content>
                     </v-expansion-panel>
                   </v-expansion-panels>
@@ -237,48 +244,47 @@
       </v-layout>
     </template>
     <template v-if="type === 'none'">
-      <popup-screen-loader />
+      <PopupScreenLoader />
     </template>
   </v-container>
 </template>
 
 <script>
-import VueJsonPretty from 'vue-json-pretty'
-import { BroadcastChannel } from 'broadcast-channel'
-import { fromWei, toChecksumAddress, hexToNumber } from 'web3-utils'
 import BigNumber from 'bignumber.js'
-import log from 'loglevel'
-import tokenABI from 'human-standard-token-abi'
+import { BroadcastChannel } from 'broadcast-channel'
 import collectibleABI from 'human-standard-collectible-abi'
-import { isArray } from 'util'
+import tokenABI from 'human-standard-token-abi'
+import log from 'loglevel'
+import VueJsonPretty from 'vue-json-pretty'
+import { fromWei, hexToNumber, toChecksumAddress } from 'web3-utils'
 
-import ShowToolTip from '../../components/helpers/ShowToolTip'
-import { PopupScreenLoader } from '../../content-loader'
-import TransactionSpeedSelect from '../../components/helpers/TransactionSpeedSelect'
 import TransferConfirm from '../../components/Confirm/TransferConfirm'
 import NetworkDisplay from '../../components/helpers/NetworkDisplay'
-// import PermissionConfirm from '../../components/Confirm/PermissionConfirm'
-import { significantDigits, addressSlicer, broadcastChannelOptions } from '../../utils/utils'
-import { get } from '../../utils/httpHelpers'
+import ShowToolTip from '../../components/helpers/ShowToolTip'
+import TransactionSpeedSelect from '../../components/helpers/TransactionSpeedSelect'
 import config from '../../config'
+import { PopupScreenLoader } from '../../content-loader'
 import {
+  COLLECTIBLE_METHOD_SAFE_TRANSFER_FROM,
   CONTRACT_INTERACTION_KEY,
   DEPLOY_CONTRACT_ACTION_KEY,
+  SEND_ETHER_ACTION_KEY,
   TOKEN_METHOD_APPROVE,
   TOKEN_METHOD_TRANSFER,
   TOKEN_METHOD_TRANSFER_FROM,
-  COLLECTIBLE_METHOD_SAFE_TRANSFER_FROM,
-  SEND_ETHER_ACTION_KEY,
   TX_MESSAGE,
-  TX_TYPED_MESSAGE,
   TX_PERSONAL_MESSAGE,
-  TX_TRANSACTION
+  TX_TRANSACTION,
+  TX_TYPED_MESSAGE,
 } from '../../utils/enums'
+import { get } from '../../utils/httpHelpers'
+// import PermissionConfirm from '../../components/Confirm/PermissionConfirm'
+import { addressSlicer, broadcastChannelOptions, significantDigits } from '../../utils/utils'
 
 const weiInGwei = new BigNumber('10').pow(new BigNumber('9'))
 
 export default {
-  name: 'confirm',
+  name: 'Confirm',
   components: {
     VueJsonPretty,
     PopupScreenLoader,
@@ -286,7 +292,7 @@ export default {
     TransferConfirm,
     // PermissionConfirm,
     NetworkDisplay,
-    ShowToolTip
+    ShowToolTip,
   },
   data() {
     return {
@@ -317,7 +323,11 @@ export default {
       topUpErrorShow: false,
       canShowError: false,
       txFees: new BigNumber('0'),
-      network: '',
+      network: {
+        networkName: '',
+        host: '',
+        chainId: '',
+      },
       transactionCategory: '',
       dollarValue: new BigNumber('0'),
       speed: '',
@@ -337,7 +347,7 @@ export default {
       TX_TRANSACTION,
       TX_TYPED_MESSAGE,
       TX_PERSONAL_MESSAGE,
-      TX_MESSAGE
+      TX_MESSAGE,
     }
   },
   computed: {
@@ -368,7 +378,7 @@ export default {
       }
     },
     isLightHeader() {
-      return [DEPLOY_CONTRACT_ACTION_KEY, CONTRACT_INTERACTION_KEY].indexOf(this.transactionCategory) >= 0
+      return [DEPLOY_CONTRACT_ACTION_KEY, CONTRACT_INTERACTION_KEY].includes(this.transactionCategory)
     },
     displayAmountTo() {
       switch (this.transactionCategory) {
@@ -418,20 +428,20 @@ export default {
       }
     },
     costOfTransaction() {
-      if ([TOKEN_METHOD_APPROVE, TOKEN_METHOD_TRANSFER, TOKEN_METHOD_TRANSFER_FROM].indexOf(this.transactionCategory) >= 0) {
+      if ([TOKEN_METHOD_TRANSFER, TOKEN_METHOD_TRANSFER_FROM].includes(this.transactionCategory)) {
         return `${this.displayAmountValue}`
-      } else {
-        return `${this.totalEthCostDisplay} ETH`
       }
+      return `${this.totalEthCostDisplay} ETH`
     },
     isOtherToken() {
-      return [TOKEN_METHOD_APPROVE, TOKEN_METHOD_TRANSFER, TOKEN_METHOD_TRANSFER_FROM].indexOf(this.transactionCategory) >= 0
-      //`+ ${significantDigits(this.gasCost)}`
+      return [TOKEN_METHOD_APPROVE, TOKEN_METHOD_TRANSFER, TOKEN_METHOD_TRANSFER_FROM].includes(this.transactionCategory)
+      // `+ ${significantDigits(this.gasCost)}`
     },
     costOfTransactionConverted() {
-      const totalCost = this.isOtherToken
-        ? significantDigits(this.totalUsdCost + this.amountTokenValueConverted.toNumber(), false, 5)
-        : this.totalUsdCost
+      let cost = this.totalUsdCost
+      if (this.transactionCategory !== TOKEN_METHOD_APPROVE) cost += this.amountTokenValueConverted.toNumber()
+
+      const totalCost = this.isOtherToken ? significantDigits(cost, false, 5) : this.totalUsdCost
       return `~ ${totalCost} ${this.selectedCurrency}`
     },
     imageType() {
@@ -441,19 +451,18 @@ export default {
     },
     getCurrencyMultiplier() {
       log.info(this.selectedCurrency)
-      const currencyMultiplierNum = this.selectedCurrency !== 'ETH' ? this.currencyData[this.selectedCurrency.toLowerCase()] || 1 : 1
-      const currencyMultiplier = new BigNumber(currencyMultiplierNum)
-      return currencyMultiplier
+      const currencyMultiplierNumber = this.selectedCurrency !== 'ETH' ? this.currencyData[this.selectedCurrency.toLowerCase()] || 1 : 1
+      return new BigNumber(currencyMultiplierNumber)
     },
     getCurrencyRate() {
       const ethConverted = this.getCurrencyMultiplier
-      const tokenPriceConverted = this.isOtherToken ? this.tokenPrice : ethConverted
+      const tokenPriceConverted = this.isOtherToken ? this.tokenPrice.times(ethConverted) : ethConverted
       const selectedToken = this.isOtherToken ? this.selectedToken : 'ETH'
       return `1 ${selectedToken} = ${significantDigits(tokenPriceConverted)} ${this.selectedCurrency} @ ${this.currencyRateDate}`
-    }
+    },
   },
   watch: {
-    gasPrice: function(newGasPrice, oldGasPrice) {
+    gasPrice(newGasPrice, oldGasPrice) {
       if (!newGasPrice.eq(oldGasPrice)) {
         this.gasCost = newGasPrice.times(this.gasEstimate).div(new BigNumber('10').pow(new BigNumber('9')))
         this.txFees = this.gasCost.times(this.getCurrencyMultiplier)
@@ -467,115 +476,67 @@ export default {
           this.topUpErrorShow = true
         }
       }
-    }
-  },
-  methods: {
-    slicedAddress(user) {
-      return addressSlicer(user) || '0x'
     },
-    async triggerSign() {
-      var bc = new BroadcastChannel(this.channel, broadcastChannelOptions)
-      var gasHex = '0x' + this.gasPrice.times(weiInGwei).toString(16)
-      await bc.postMessage({
-        name: 'tx-result',
-        data: { type: 'confirm-transaction', gasPrice: gasHex, id: this.id, txType: this.type }
-      })
-      bc.close()
-    },
-    async triggerDeny() {
-      var bc = new BroadcastChannel(this.channel, broadcastChannelOptions)
-      await bc.postMessage({ name: 'tx-result', data: { type: 'deny-transaction', id: this.id, txType: this.type } })
-      bc.close()
-    },
-    topUp() {
-      this.$router.push({ path: '/wallet/topup' }).catch(_ => {})
-    },
-    onSelectSpeed(data) {
-      this.speedSelected = data.speedSelected
-      this.gasPrice = data.activeGasPrice
-      this.speed = data.speed
-      this.gas = data.gas
-
-      if (data.isReset) {
-        this.gasPrice = this.speedSelected === '' ? '' : this.gasPrice
-      }
-    },
-    getDate() {
-      const currentDateTime = new Date()
-      let hours = currentDateTime.getHours()
-      let minutes = currentDateTime.getMinutes()
-      let seconds = currentDateTime.getSeconds()
-      const ampm = hours >= 12 ? 'PM' : 'AM'
-
-      hours = hours % 12
-      hours = hours || 12
-      return `${hours}:${minutes}:${seconds} ${ampm}`
-    },
-    amountDisplay(amount) {
-      return significantDigits(amount || new BigNumber('0'))
-    },
-    significantDigits: significantDigits,
-    getHeaderByDapp() {
-      return this.t('dappTransfer.contractInteraction')
-    }
   },
   mounted() {
-    const queryParams = new URLSearchParams(window.location.search)
-    const instanceId = queryParams.get('instanceId')
-    const queryParamId = queryParams.get('id')
+    const queryParameters = new URLSearchParams(window.location.search)
+    const instanceId = queryParameters.get('instanceId')
+    const queryParameterId = queryParameters.get('id')
     this.channel = `torus_channel_${instanceId}`
     const bc = new BroadcastChannel(this.channel, broadcastChannelOptions)
-    bc.onmessage = async ev => {
+    bc.addEventListener('message', async (ev) => {
       if (ev.name !== 'send-params') return
       const { type, msgParams, txParams, origin, balance, selectedCurrency, tokenRates, jwtToken, currencyData, network } = ev.data || {}
       this.selectedCurrency = selectedCurrency
       this.currencyData = currencyData
-      if (txParams && txParams.id.toString() !== queryParamId) return
+      if (txParams && txParams.id.toString() !== queryParameterId) return
       bc.close()
       this.balance = new BigNumber(balance)
       log.info({ msgParams, txParams })
       this.origin = origin
       if (type !== TX_TRANSACTION) {
-        let { msgParams: { message, typedMessages } = {}, id = '' } = msgParams
+        const { msgParams: { message, typedMessages } = {}, id = '' } = msgParams
+        let finalTypedMessages = typedMessages
         try {
-          typedMessages = typedMessages && JSON.parse(typedMessages)
-        } catch (e) {
-          log.error(e)
+          finalTypedMessages = typedMessages && JSON.parse(typedMessages)
+        } catch (error) {
+          log.error(error)
         }
         this.id = id
         this.message = message
-        this.typedMessages = typedMessages
+        this.typedMessages = finalTypedMessages
       } else {
         let finalValue = new BigNumber('0')
-        let { simulationFails, id, transactionCategory, methodParams, contractParams, txParams: txObject } = txParams || {}
+        const { simulationFails, id, transactionCategory, methodParams, contractParams, txParams: txObject } = txParams || {}
         const { value, to, data, from: sender, gas, gasPrice } = txObject || {}
         const { reason = '' } = simulationFails || {}
         if (value) {
           finalValue = new BigNumber(fromWei(value.toString()))
         }
         // Get ABI for method
-        let txDataParams = ''
+        let txDataParameters = ''
         if (contractParams.erc721) {
-          txDataParams = collectibleABI.find(item => item.name && item.name.toLowerCase() === transactionCategory) || ''
+          txDataParameters = collectibleABI.find((item) => item.name && item.name.toLowerCase() === transactionCategory) || ''
         } else if (contractParams.erc20) {
-          txDataParams = tokenABI.find(item => item.name && item.name.toLowerCase() === transactionCategory) || ''
+          txDataParameters = tokenABI.find((item) => item.name && item.name.toLowerCase() === transactionCategory) || ''
         }
         // Get Params from method type ABI
-        let amountTo, amountValue
-        if (methodParams && isArray(methodParams)) {
-          if (transactionCategory === TOKEN_METHOD_TRANSFER_FROM || transactionCategory === COLLECTIBLE_METHOD_SAFE_TRANSFER_FROM)
-            [amountTo, amountValue] = methodParams || []
-          else [amountTo, amountValue] = methodParams || []
+        let amountTo
+        let amountValue
+        if (methodParams && Array.isArray(methodParams)) {
+          if (transactionCategory === TOKEN_METHOD_TRANSFER_FROM || transactionCategory === COLLECTIBLE_METHOD_SAFE_TRANSFER_FROM) {
+            ;[amountTo, amountValue] = methodParams || []
+          } else [amountTo, amountValue] = methodParams || []
         }
         log.info(methodParams, 'params')
         const checkSummedTo = toChecksumAddress(to)
-        const tokenObj = contractParams
-        const decimals = new BigNumber(tokenObj.decimals || '0')
-        this.selectedToken = tokenObj.symbol || 'ERC20'
+        const tokenObject = contractParams
+        const decimals = new BigNumber(tokenObject.decimals || '0')
+        this.selectedToken = tokenObject.symbol || 'ERC20'
         this.id = id
         this.network = network
         this.transactionCategory = transactionCategory
-        var gweiGasPrice = new BigNumber(hexToNumber(gasPrice)).div(weiInGwei)
+        const gweiGasPrice = new BigNumber(hexToNumber(gasPrice)).div(weiInGwei)
         // sending to who
         this.amountTo = amountTo ? amountTo.value : checkSummedTo
         // sending what value
@@ -589,8 +550,8 @@ export default {
             let prices = {}
             try {
               prices = await get(`https://api.coingecko.com/api/v3/simple/token_price/ethereum?${query}`)
-              tokenRateMultiplier = //token price in eth
-                prices[checkSummedTo.toLowerCase()] && prices[checkSummedTo.toLowerCase()].eth ? prices[checkSummedTo.toLowerCase()].eth : 0
+              const lowerCheckSum = checkSummedTo.toLowerCase()
+              tokenRateMultiplier = prices[lowerCheckSum] && prices[lowerCheckSum].eth ? prices[lowerCheckSum].eth : 0 // token price in eth
             } catch (error) {
               log.info(error)
             }
@@ -605,12 +566,12 @@ export default {
             const url = `https://api.opensea.io/api/v1/asset/${checkSummedTo}/${this.amountValue}`
             assetDetails = await get(`${config.api}/opensea?url=${url}`, {
               headers: {
-                Authorization: `Bearer ${jwtToken}`
-              }
+                Authorization: `Bearer ${jwtToken}`,
+              },
             })
             this.assetDetails = {
               name: assetDetails.data.name || '',
-              logo: assetDetails.data.image_thumbnail_url || ''
+              logo: assetDetails.data.image_thumbnail_url || '',
             }
           } catch (error) {
             log.info(error)
@@ -624,7 +585,7 @@ export default {
         this.balanceUsd = significantDigits(this.balance.times(this.getCurrencyMultiplier)) // in usd
         this.gasEstimate = new BigNumber(hexToNumber(gas)) // gas number
         this.txData = data // data hex
-        this.txDataParams = txDataParams !== '' ? JSON.stringify(txDataParams, null, 2) : ''
+        this.txDataParams = txDataParameters !== '' ? JSON.stringify(txDataParameters, null, 2) : ''
         this.sender = sender // address of sender
         this.gasCost = gweiGasPrice.times(this.gasEstimate).div(new BigNumber('10').pow(new BigNumber('9')))
         this.txFees = this.gasCost.times(this.getCurrencyMultiplier)
@@ -643,9 +604,59 @@ export default {
         }
       }
       this.type = type // type of tx
-    }
-    bc.postMessage({ name: 'popup-loaded', data: { id: queryParamId } })
-  }
+    })
+    bc.postMessage({ name: 'popup-loaded', data: { id: queryParameterId } })
+  },
+  methods: {
+    slicedAddress(user) {
+      return addressSlicer(user) || '0x'
+    },
+    async triggerSign() {
+      const bc = new BroadcastChannel(this.channel, broadcastChannelOptions)
+      const gasHex = `0x${this.gasPrice.times(weiInGwei).toString(16)}`
+      await bc.postMessage({
+        name: 'tx-result',
+        data: { type: 'confirm-transaction', gasPrice: gasHex, id: this.id, txType: this.type },
+      })
+      bc.close()
+    },
+    async triggerDeny() {
+      const bc = new BroadcastChannel(this.channel, broadcastChannelOptions)
+      await bc.postMessage({ name: 'tx-result', data: { type: 'deny-transaction', id: this.id, txType: this.type } })
+      bc.close()
+    },
+    topUp() {
+      this.$router.push({ path: '/wallet/topup' }).catch((_) => {})
+    },
+    onSelectSpeed(data) {
+      this.speedSelected = data.speedSelected
+      this.gasPrice = data.activeGasPrice
+      this.speed = data.speed
+      this.gas = data.gas
+
+      if (data.isReset) {
+        this.gasPrice = this.speedSelected === '' ? '' : this.gasPrice
+      }
+    },
+    getDate() {
+      const currentDateTime = new Date()
+      let hours = currentDateTime.getHours()
+      const minutes = currentDateTime.getMinutes()
+      const seconds = currentDateTime.getSeconds()
+      const ampm = hours >= 12 ? 'PM' : 'AM'
+
+      hours %= 12
+      hours = hours || 12
+      return `${hours}:${minutes}:${seconds} ${ampm}`
+    },
+    amountDisplay(amount) {
+      return significantDigits(amount || new BigNumber('0'))
+    },
+    significantDigits,
+    getHeaderByDapp() {
+      return this.t('dappTransfer.contractInteraction')
+    },
+  },
 }
 </script>
 

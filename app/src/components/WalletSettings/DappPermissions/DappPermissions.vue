@@ -21,10 +21,10 @@
           <v-flex xs12 class="px-4">
             <template v-for="(permission, index) in permissions">
               <v-slide-y-transition :key="index">
-                <dapp-permission-edit v-if="permission.isEdit" @onCancel="permission.isEdit = false" />
+                <DappPermissionEdit v-if="permission.isEdit" @onCancel="permission.isEdit = false" />
               </v-slide-y-transition>
               <v-slide-y-transition :key="index">
-                <dapp-permission-view v-if="!permission.isEdit" @onDelete="onDeletePermission(permission)" @onEdit="permission.isEdit = true" />
+                <DappPermissionView v-if="!permission.isEdit" @onDelete="onDeletePermission(permission)" @onEdit="permission.isEdit = true" />
               </v-slide-y-transition>
             </template>
           </v-flex>
@@ -39,19 +39,19 @@
 </template>
 
 <script>
-import DappPermissionView from '../DappPermissionView'
 import DappPermissionEdit from '../DappPermissionEdit'
+import DappPermissionView from '../DappPermissionView'
 
 export default {
+  components: {
+    DappPermissionView,
+    DappPermissionEdit,
+  },
   data() {
     return {
       editMode: false,
-      permissions: []
+      permissions: [],
     }
-  },
-  components: {
-    DappPermissionView,
-    DappPermissionEdit
   },
   methods: {
     onClose() {
@@ -59,17 +59,17 @@ export default {
     },
     addPermission() {
       this.permissions.push({
-        isEdit: false
+        isEdit: false,
       })
     },
     onDeletePermission(target) {
       const targetIndex = this.permissions.indexOf(target)
       this.permissions.splice(targetIndex, 1)
-    }
-  }
+    },
+  },
 }
 </script>
 
-<style lang="scss">
+<style lang="scss" scoped>
 @import 'DappPermissions.scss';
 </style>

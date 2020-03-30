@@ -1,3 +1,7 @@
+.container {
+  max-width: 600px;
+}
+
 /* Portrait phones and smaller */
 @media (max-width: 598px) {
   .bcg-logo {
@@ -33,9 +37,7 @@
 }
 
 @mixin svg-size($args...) {
-
-  @each $name,
-  $size in keywords($args) {
+  @each $name, $size in keywords($args) {
     .svg-setting-#{$name} {
       width: $size;
       height: $size;
@@ -159,21 +161,20 @@ hr {
   }
 }
 
-.theme--light.v-sheet, 
+.theme--light.v-sheet,
 .theme--dark.v-sheet {
   background: transparent;
 }
 
 .theme--light.v-card {
   background: var(--v-background_body_1-base);
-
 }
 .theme--dark.v-card {
   background: var(--v-background_body_1-base);
 }
 
 .word-break {
-  word-break: break-all
+  word-break: break-all;
 }
 
 ::v-deep .v-expansion-panel .vjs-tree .vjs-value__string {
@@ -191,17 +192,17 @@ hr {
 
 .v-expansion-panel {
   background: transparent !important;
-  margin-bottom: 5px
+  margin-bottom: 5px;
 }
 
 .v-expansion-panel::before {
   box-shadow: none;
   border-left: 2px solid var(--v-primary-base);
-  border-radius: 0
+  border-radius: 0;
 }
 
 .v-expansion-panel:not(:first-child)::after {
-  border-top: 0
+  border-top: 0;
 }
 
 .v-expansion-panel-header {
@@ -209,7 +210,7 @@ hr {
 }
 
 .background_3 {
-  background: transparent !important
+  background: transparent !important;
 }
 
 .typedMessageBox {

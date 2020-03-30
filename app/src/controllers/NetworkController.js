@@ -1,59 +1,43 @@
 import assert from 'assert'
+import BlockTracker from 'eth-block-tracker'
+import createInfuraMiddleware from 'eth-json-rpc-infura'
+import createBlockCacheMiddleware from 'eth-json-rpc-middleware/block-cache'
+import createBlockReRefMiddleware from 'eth-json-rpc-middleware/block-ref'
+import createBlockRefRewriteMiddleware from 'eth-json-rpc-middleware/block-ref-rewrite'
+import createBlockTrackerInspectorMiddleware from 'eth-json-rpc-middleware/block-tracker-inspector'
+import createFetchMiddleware from 'eth-json-rpc-middleware/fetch'
+import createInflightMiddleware from 'eth-json-rpc-middleware/inflight-cache'
+import providerFromEngine from 'eth-json-rpc-middleware/providerFromEngine'
+import providerFromMiddleware from 'eth-json-rpc-middleware/providerFromMiddleware'
+import createRetryOnEmptyMiddleware from 'eth-json-rpc-middleware/retryOnEmpty'
+import EthQuery from 'eth-query'
 import EventEmitter from 'events'
+import JsonRpcEngine from 'json-rpc-engine'
+import createScaffoldMiddleware from 'json-rpc-engine/src/createScaffoldMiddleware'
+import mergeMiddleware from 'json-rpc-engine/src/mergeMiddleware'
+import log from 'loglevel'
 import ObservableStore from 'obs-store'
 import ComposedStore from 'obs-store/lib/composed'
-import log from 'loglevel'
-import mergeMiddleware from 'json-rpc-engine/src/mergeMiddleware'
-import createScaffoldMiddleware from 'json-rpc-engine/src/createScaffoldMiddleware'
-import createBlockReRefMiddleware from 'eth-json-rpc-middleware/block-ref'
-import createRetryOnEmptyMiddleware from 'eth-json-rpc-middleware/retryOnEmpty'
-import createBlockCacheMiddleware from 'eth-json-rpc-middleware/block-cache'
-import createInflightMiddleware from 'eth-json-rpc-middleware/inflight-cache'
-import createBlockTrackerInspectorMiddleware from 'eth-json-rpc-middleware/block-tracker-inspector'
-import providerFromMiddleware from 'eth-json-rpc-middleware/providerFromMiddleware'
-import createFetchMiddleware from 'eth-json-rpc-middleware/fetch'
-import createBlockRefRewriteMiddleware from 'eth-json-rpc-middleware/block-ref-rewrite'
-import createInfuraMiddleware from 'eth-json-rpc-infura'
-import BlockTracker from 'eth-block-tracker'
-import EthQuery from 'eth-query'
-import JsonRpcEngine from 'json-rpc-engine'
-import providerFromEngine from 'eth-json-rpc-middleware/providerFromEngine'
-import { createSwappableProxy, createEventEmitterProxy } from 'swappable-obj-proxy'
+import { createEventEmitterProxy, createSwappableProxy } from 'swappable-obj-proxy'
 
 import createMetamaskMiddleware from '../utils/createMetamaskMiddleware'
-import {
-  ROPSTEN,
-  RINKEBY,
-  KOVAN,
-  MAINNET,
-  LOCALHOST,
-  GOERLI,
-  MATIC,
-  MATIC_URL,
-  MATIC_CODE,
-  MAINNET_CODE,
-  GOERLI_CODE,
-  ROPSTEN_CODE,
-  KOVAN_CODE,
-  RINKEBY_CODE,
-  SUPPORTED_NETWORK_TYPES
-} from '../utils/enums'
+import { GOERLI, KOVAN, LOCALHOST, MAINNET, MATIC, MATIC_CODE, MATIC_URL, RINKEBY, ROPSTEN, SUPPORTED_NETWORK_TYPES } from '../utils/enums'
 
 // defaults and constants
 const defaultProviderConfig = { type: 'mainnet' }
 const defaultNetworkConfig = { ticker: 'ETH' }
 const networks = { networkList: {} }
-const INFURA_PROVIDER_TYPES = [ROPSTEN, RINKEBY, KOVAN, MAINNET, GOERLI]
+const INFURA_PROVIDER_TYPES = new Set([ROPSTEN, RINKEBY, KOVAN, MAINNET, GOERLI])
 
 export default class NetworkController extends EventEmitter {
   /**
    * @constructor
    * @param {Object} opts
    */
-  constructor(opts = {}) {
+  constructor(options = {}) {
     super()
     this.defaultMaxListeners = 20
-    const providerConfig = opts.provider || defaultProviderConfig
+    const providerConfig = options.provider || defaultProviderConfig
     log.info(providerConfig)
     if (!SUPPORTED_NETWORK_TYPES[providerConfig.rpcTarget]) {
       providerConfig.type = 'rpc'
@@ -65,7 +49,7 @@ export default class NetworkController extends EventEmitter {
     this.store = new ComposedStore({
       provider: this.providerStore,
       network: this.networkStore,
-      settings: this.networkConfig
+      settings: this.networkConfig,
     })
     this.on('networkDidChange', this.lookupNetwork)
     // provider and block tracker
@@ -77,31 +61,28 @@ export default class NetworkController extends EventEmitter {
   }
 
   getNetworkNameFromNetworkCode() {
-    switch (parseInt(this.getNetworkState())) {
-      case MAINNET_CODE:
-        return MAINNET
-
-      case RINKEBY_CODE:
-        return RINKEBY
-
-      case ROPSTEN_CODE:
-        return ROPSTEN
-
-      case KOVAN_CODE:
-        return KOVAN
-
-      case GOERLI_CODE:
-        return GOERLI
-      default:
-        return 'loading'
-    }
+    return this.getProviderConfig().type
+    // switch (parseInt(this.providerStore., 10)) {
+    //   case MAINNET_CODE:
+    //     return MAINNET
+    //   case RINKEBY_CODE:
+    //     return RINKEBY
+    //   case ROPSTEN_CODE:
+    //     return ROPSTEN
+    //   case KOVAN_CODE:
+    //     return KOVAN
+    //   case GOERLI_CODE:
+    //     return GOERLI
+    //   default:
+    //     return 'loading'
+    // }
   }
 
   /**
    * Helper method for initializing provider
    */
-  initializeProvider(providerParams) {
-    this._baseProviderParams = providerParams
+  initializeProvider(providerParameters) {
+    this._baseProviderParams = providerParameters
     const { type, rpcTarget, chainId, ticker, nickname } = this.providerStore.getState()
     this._configureProvider({ type, rpcTarget, chainId, ticker, nickname })
     this.lookupNetwork()
@@ -145,14 +126,15 @@ export default class NetworkController extends EventEmitter {
    */
   setNetworkState(network, type) {
     if (network === 'loading') {
-      return this.networkStore.putState(network)
+      this.networkStore.putState(network)
+      return
     }
     if (!type) {
       return
     }
     // eslint-disable-next-line no-param-reassign
     network = networks.networkList[type] && networks.networkList[type].chainId ? networks.networkList[type].chainId : network
-    return this.networkStore.putState(network)
+    this.networkStore.putState(network)
   }
 
   /**
@@ -168,18 +150,20 @@ export default class NetworkController extends EventEmitter {
   lookupNetwork() {
     // Prevent firing when provider is not defined.
     if (!this._provider) {
-      return log.warn('NetworkController - lookupNetwork aborted due to missing provider')
+      log.warn('NetworkController - lookupNetwork aborted due to missing provider')
+      return
     }
     const { type } = this.providerStore.getState()
     const ethQuery = new EthQuery(this._provider)
     const initialNetwork = this.getNetworkState()
-    ethQuery.sendAsync({ method: 'net_version' }, (err, network) => {
+    ethQuery.sendAsync({ method: 'net_version' }, (error, network) => {
       const currentNetwork = this.getNetworkState()
       if (initialNetwork === currentNetwork) {
-        if (err) {
-          return this.setNetworkState('loading')
+        if (error) {
+          this.setNetworkState('loading')
+          return
         }
-        log.info('web3.getNetwork returned ' + network)
+        log.info(`web3.getNetwork returned ${network}`)
         this.setNetworkState(network, type)
       }
     })
@@ -192,7 +176,7 @@ export default class NetworkController extends EventEmitter {
       chainId,
       ticker,
       nickname,
-      rpcPrefs
+      rpcPrefs,
     }
     this.providerConfig = providerConfig
   }
@@ -203,7 +187,7 @@ export default class NetworkController extends EventEmitter {
    */
   async setProviderType(type, rpcTarget = '', ticker = 'ETH', nickname = '') {
     assert.notStrictEqual(type, 'rpc', 'NetworkController - cannot call "setProviderType" with type \'rpc\'. use "setRpcTarget"')
-    assert(INFURA_PROVIDER_TYPES.includes(type) || type === LOCALHOST || type === MATIC, `NetworkController - Unknown rpc type "${type}"`)
+    assert(INFURA_PROVIDER_TYPES.has(type) || type === LOCALHOST || type === MATIC, `NetworkController - Unknown rpc type "${type}"`)
     const providerConfig = { type, rpcTarget, ticker, nickname }
     this.providerConfig = providerConfig
   }
@@ -230,23 +214,23 @@ export default class NetworkController extends EventEmitter {
     return this.providerStore.getState()
   }
 
-  _switchNetwork(opts) {
+  _switchNetwork(options) {
     this.setNetworkState('loading')
-    this._configureProvider(opts)
+    this._configureProvider(options)
     this.emit('networkDidChange')
   }
 
-  _configureProvider(opts) {
-    const { type, rpcTarget, chainId, ticker, nickname } = opts
+  _configureProvider(options) {
+    const { type, rpcTarget, chainId, ticker, nickname } = options
     // infura type-based endpoints
-    const isInfura = INFURA_PROVIDER_TYPES.includes(type)
+    const isInfura = INFURA_PROVIDER_TYPES.has(type)
     if (isInfura) {
-      this._configureInfuraProvider(opts)
+      this._configureInfuraProvider(options)
     } else if (type === LOCALHOST) {
       this._configureLocalhostProvider()
       // url-based rpc endpoints
     } else if (type === MATIC) {
-      this._configureStandardProvider({ rpcUrl: MATIC_URL, MATIC_CODE, MATIC, MATIC })
+      this._configureStandardProvider({ rpcUrl: MATIC_URL, chainId: MATIC_CODE, ticker: MATIC, nickname: MATIC })
     } else if (type === 'rpc') {
       this._configureStandardProvider({ rpcUrl: rpcTarget, chainId, ticker, nickname })
     } else {
@@ -259,8 +243,8 @@ export default class NetworkController extends EventEmitter {
     const networkClient = createInfuraClient({ network: type })
     this._setNetworkClient(networkClient)
     // setup networkConfig
-    var settings = {
-      ticker: 'ETH'
+    const settings = {
+      ticker: 'ETH',
     }
     this.networkConfig.putState(settings)
   }
@@ -275,17 +259,17 @@ export default class NetworkController extends EventEmitter {
     log.info('NetworkController - configureStandardProvider', rpcUrl)
     const networkClient = createJsonRpcClient({ rpcUrl })
     // hack to add a 'rpc' network with chainId
-    networks.networkList['rpc'] = {
-      chainId: chainId,
+    networks.networkList.rpc = {
+      chainId,
       rpcUrl,
       ticker: ticker || 'ETH',
-      nickname
+      nickname,
     }
     // setup networkConfig
-    var settings = {
-      network: chainId
+    let settings = {
+      network: chainId,
     }
-    settings = { ...settings, ...networks.networkList['rpc'] }
+    settings = { ...settings, ...networks.networkList.rpc }
     this.networkConfig.putState(settings)
     this._setNetworkClient(networkClient)
   }
@@ -330,7 +314,7 @@ function createInfuraClient({ network }) {
     createBlockReRefMiddleware({ blockTracker, provider: infuraProvider }),
     createRetryOnEmptyMiddleware({ blockTracker, provider: infuraProvider }),
     createBlockTrackerInspectorMiddleware({ blockTracker }),
-    infuraMiddleware
+    infuraMiddleware,
   ])
   return { networkMiddleware, blockTracker }
 }
@@ -365,7 +349,7 @@ function createNetworkAndChainIdMiddleware({ network }) {
 
   return createScaffoldMiddleware({
     eth_chainId: chainId,
-    net_version: netId
+    net_version: netId,
   })
 }
 
@@ -377,7 +361,7 @@ function createLocalhostClient() {
   const networkMiddleware = mergeMiddleware([
     createBlockRefRewriteMiddleware({ blockTracker }),
     createBlockTrackerInspectorMiddleware({ blockTracker }),
-    fetchMiddleware
+    fetchMiddleware,
   ])
   return { networkMiddleware, blockTracker }
 }
@@ -392,7 +376,7 @@ function createJsonRpcClient({ rpcUrl }) {
     createBlockCacheMiddleware({ blockTracker }),
     createInflightMiddleware(),
     createBlockTrackerInspectorMiddleware({ blockTracker }),
-    fetchMiddleware
+    fetchMiddleware,
   ])
   return { networkMiddleware, blockTracker }
 }

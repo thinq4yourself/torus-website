@@ -1,4 +1,4 @@
-import { MAINNET, MAINNET_DISPLAY_NAME, MAINNET_CODE, USER_INFO_REQUEST_NEW, THEME_LIGHT_BLUE_NAME, LOCALE_EN } from '../utils/enums'
+import { LOCALE_EN, MAINNET, MAINNET_CODE, MAINNET_DISPLAY_NAME, THEME_LIGHT_BLUE_NAME, USER_INFO_REQUEST_NEW } from '../utils/enums'
 
 const initialState = {
   userInfo: {
@@ -7,7 +7,7 @@ const initialState = {
     email: '',
     verifier: '', // enum like GOOGLE
     verifierId: '', // usually email or facebook id
-    verifierParams: {} // general params
+    verifierParams: {}, // general params
   },
   // loaders
   loginInProgress: false,
@@ -43,7 +43,7 @@ const initialState = {
   userInfoAccess: USER_INFO_REQUEST_NEW, // deprecate
   errorMsg: '',
   successMsg: '',
-  iframeMetadata: { origin: '', name: '', icon: '' }
+  iframeMetadata: { origin: '', name: '', icon: '' },
 }
 
 export default initialState

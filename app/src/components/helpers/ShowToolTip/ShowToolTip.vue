@@ -16,22 +16,27 @@
 import copyToClipboard from 'copy-to-clipboard'
 
 export default {
-  name: 'showToolTip',
+  name: 'ShowToolTip',
+  props: {
+    address: {
+      type: String,
+      default: '',
+    },
+  },
   data() {
     return {
-      copied: false
+      copied: false,
     }
   },
-  props: ['address'],
   methods: {
     copyToClip(address) {
       this.copied = true
       copyToClipboard(address)
       setTimeout(() => {
         this.copied = false
-      }, 2500)
-    }
-  }
+      }, 3000)
+    },
+  },
 }
 </script>
 

@@ -1,34 +1,35 @@
 import { BroadcastChannel } from 'broadcast-channel'
 import log from 'loglevel'
-import { broadcastChannelOptions, getIFrameOriginObj } from './utils'
-import torus from '../torus'
-import PopupHandler from './PopupHandler'
-import config from '../config'
 
-const baseRoute = config.baseRoute
+import config from '../config'
+import PopupHandler from './PopupHandler'
+import { broadcastChannelOptions, getIFrameOriginObject } from './utils'
+
+const { baseRoute } = config
 
 class ConfirmHandler {
-  constructor() {
+  constructor(torusInstanceId) {
     this.id = undefined
     this.txType = undefined
     this.confirmWindow = {}
-    this.bc = new BroadcastChannel(`torus_channel_${torus.instanceId}`, broadcastChannelOptions)
+    this.torusInstanceId = torusInstanceId
+    this.bc = new BroadcastChannel(`torus_channel_${torusInstanceId}`, broadcastChannelOptions)
   }
 
-  open = (handleConfirm, handleDeny) => {
-    const finalUrl = `${baseRoute}confirm?instanceId=${torus.instanceId}&integrity=true&id=${this.id}`
+  open(handleConfirm, handleDeny) {
+    const finalUrl = `${baseRoute}confirm?instanceId=${this.torusInstanceId}&integrity=true&id=${this.id}`
     this.confirmWindow = new PopupHandler({
       url: finalUrl,
       target: '_blank',
-      features: 'directories=0,titlebar=0,toolbar=0,status=0,location=0,menubar=0,height=660,width=500'
+      features: 'directories=0,titlebar=0,toolbar=0,status=0,location=0,menubar=0,height=660,width=500',
     })
     this.confirmWindow.open()
 
-    this.bc.onmessage = this.handle
+    this.bc.addEventListener('message', this.handle.bind(this))
     this.handleConfirm = handleConfirm
     this.handleDeny = handleDeny
 
-    this.origin = getIFrameOriginObj()
+    this.origin = getIFrameOriginObject()
 
     this.confirmWindow.once('close', () => {
       this.bc.close()
@@ -39,7 +40,7 @@ class ConfirmHandler {
     })
   }
 
-  sendTx = async () => {
+  async sendTx() {
     await this.bc.postMessage({
       name: 'send-params',
       data: {
@@ -51,12 +52,12 @@ class ConfirmHandler {
         tokenRates: this.tokenRates,
         jwtToken: this.jwtToken,
         currencyData: this.currencyData,
-        network: this.networkType
-      }
+        network: this.networkType,
+      },
     })
   }
 
-  sendMessage = async () => {
+  async sendMessage() {
     await this.bc.postMessage({
       name: 'send-params',
       data: {
@@ -67,12 +68,12 @@ class ConfirmHandler {
         tokenRates: this.tokenRates,
         jwtToken: this.jwtToken,
         currencyData: this.currencyData,
-        network: this.networkType
-      }
+        network: this.networkType,
+      },
     })
   }
 
-  handle = async ev => {
+  async handle(ev) {
     const { name, data: { id = '', type = '', txType = '' } = {} } = ev
     if (name === 'popup-loaded' && id.toString() === this.id.toString()) {
       if (this.isTx) this.sendTx()

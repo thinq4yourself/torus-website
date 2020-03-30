@@ -1,4 +1,8 @@
 /* NEW UI */
+.container {
+  max-width: 600px;
+}
+
 .v-card__text {
   padding: 12px;
 }
@@ -36,7 +40,7 @@
   }
 }
 
-.theme--light.v-sheet, 
+.theme--light.v-sheet,
 .theme--dark.v-sheet {
-  background: transparent
+  background: transparent;
 }

@@ -1,5 +1,6 @@
 const fs = require('fs')
 const path = require('path')
+const TerserPlugin = require('terser-webpack-plugin')
 const serviceWorkerIntegrityPlugin = require('./serviceWorkerIntegrityPlugin')
 
 const version = `v${JSON.parse(fs.readFileSync(path.resolve('./package.json'))).version}`
@@ -12,26 +13,25 @@ module.exports = {
     hotOnly: false,
     headers: {
       'Access-Control-Allow-Origin': '*',
-      'Cache-Control': 'max-age=3600'
+      'Cache-Control': 'max-age=3600',
     },
     historyApiFallback: {
       rewrites: [
         { from: /redirect/, to: '/redirect.html' },
-        { from: /./, to: '/index.html' }
-      ]
-    }
+        { from: /./, to: '/index.html' },
+      ],
+    },
   },
   css: {
-    extract: false
+    extract: false,
   },
   // Adds support for Edge browser, IE 11 and Safari 9
-  transpileDependencies: ['vuetify'],
+  transpileDependencies: ['vuetify', 'obs-store'],
 
-  configureWebpack: config => {
+  configureWebpack: (config) => {
     if (process.env.NODE_ENV === 'production') {
-      const TerserPlugin = require('terser-webpack-plugin')
       // Get the current options from the Terser Plugin instance that vue-cli-service added:
-      const options = config.optimization.minimizer[0].options
+      const { options } = config.optimization.minimizer[0]
       // Set the options you want to set
       options.terserOptions.keep_fnames = true
       options.terserOptions.mangle.keep_fnames = true
@@ -41,13 +41,14 @@ module.exports = {
       config.optimization.minimizer[0] = new TerserPlugin(options)
     }
   },
-  chainWebpack: config => {
+  chainWebpack: (config) => {
     config.resolve.alias.set('bn.js', 'fork-bn.js')
-    if (process.env.NODE_ENV === 'production')
+    if (process.env.NODE_ENV === 'production') {
       config
         .plugin('service-worker-integrity')
         .use(serviceWorkerIntegrityPlugin, ['app.html', 'SERVICE_WORKER_SHA_INTEGRITY', 'service-worker.js'])
         .after('workbox')
+    }
     // config.module
     //   .rule('worker')
     //   .test(/\.worker\.js$/)
@@ -77,7 +78,7 @@ module.exports = {
       swSrc: 'sw.js',
       swDest: 'service-worker.js',
       precacheManifestFilename: 'precache-manifest.[manifestHash].js',
-      exclude: [/^.*images\/logos\/.*$/]
+      exclude: [/^.*images\/logos\/.*$/],
     },
     mainfestPath:
       process.env.VUE_APP_TORUS_BUILD_ENV === 'production' || process.env.VUE_APP_TORUS_BUILD_ENV === 'staging'
@@ -99,7 +100,7 @@ module.exports = {
               ? `/${version}/img/icons/android-chrome-192x192.png`
               : './img/icons/android-chrome-192x192.png',
           sizes: '192x192',
-          type: 'image/png'
+          type: 'image/png',
         },
         {
           src:
@@ -107,9 +108,10 @@ module.exports = {
               ? `/${version}/img/icons/android-chrome-512x512.png`
               : './img/icons/android-chrome-192x192.png',
           sizes: '512x512',
-          type: 'image/png'
-        }
-      ]
-    }
-  }
+          type: 'image/png',
+        },
+      ],
+    },
+  },
+  parallel: !process.env.CIRCLECI,
 }

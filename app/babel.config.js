@@ -1,4 +1,4 @@
 module.exports = {
-  presets: ['@vue/cli-plugin-babel/preset'],
-  sourceType: 'unambiguous'
+  presets: ['@vue/cli-plugin-babel/preset', '@babel/env'],
+  sourceType: 'unambiguous',
 }

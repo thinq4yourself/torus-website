@@ -1,12 +1,12 @@
 import Vue from 'vue'
 import Vuetify from 'vuetify/lib'
-import themes from './themes'
+
 import iconsValues from '../icons'
 import { THEME_DARK_BLACK_NAME, THEME_LIGHT_BLUE_NAME } from '../utils/enums'
+import languages from './locales'
+import themes from './themes'
 
 Vue.use(Vuetify)
-
-import languages from './locales'
 
 let userLanguage = window.navigator.userLanguage || window.navigator.language || 'en-US'
 userLanguage = userLanguage.split('-')
@@ -17,17 +17,17 @@ export default new Vuetify({
     dark: false,
     themes: {
       light: { ...themes[THEME_LIGHT_BLUE_NAME].theme },
-      dark: { ...themes[THEME_DARK_BLACK_NAME].theme }
+      dark: { ...themes[THEME_DARK_BLACK_NAME].theme },
     },
     options: {
-      customProperties: true
-    }
+      customProperties: true,
+    },
   },
   icons: {
-    values: iconsValues
+    values: iconsValues,
   },
   lang: {
     locales: languages,
-    current: userLanguage
-  }
+    current: userLanguage,
+  },
 })

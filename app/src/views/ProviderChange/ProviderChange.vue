@@ -1,14 +1,14 @@
 <template>
   <v-container px-0 py-6>
     <template v-if="type === 'none'">
-      <change-provider-screen-loader />
+      <ChangeProviderScreenLoader />
     </template>
     <template v-else>
       <!-- <permission-confirm @triggerSign="triggerSign" @triggerDeny="triggerDeny" /> -->
       <v-layout wrap align-center mx-6 mb-6>
         <v-flex xs12 class="text_1--text font-weight-bold headline float-left">{{ t('dappInfo.permission') }}</v-flex>
         <v-flex xs12>
-          <network-display :network="currentNetwork.host" :storeNetworkType="currentNetwork"></network-display>
+          <NetworkDisplay :store-network-type="currentNetwork"></NetworkDisplay>
         </v-flex>
       </v-layout>
       <v-layout wrap>
@@ -53,7 +53,6 @@
 </template>
 
 <script>
-import log from 'loglevel'
 import { BroadcastChannel } from 'broadcast-channel'
 
 import NetworkDisplay from '../../components/helpers/NetworkDisplay'
@@ -62,10 +61,10 @@ import { broadcastChannelOptions } from '../../utils/utils'
 // import PermissionConfirm from '../../components/Confirm/PermissionConfirm'
 
 export default {
-  name: 'confirm',
+  name: 'Confirm',
   components: {
     ChangeProviderScreenLoader,
-    NetworkDisplay
+    NetworkDisplay,
     // PermissionConfirm
   },
   data() {
@@ -74,31 +73,17 @@ export default {
       type: 'none',
       network: {},
       currentNetwork: {},
-      channel: ''
-    }
-  },
-  methods: {
-    async triggerSign(event) {
-      var bc = new BroadcastChannel(this.channel, broadcastChannelOptions)
-      await bc.postMessage({
-        data: { type: 'provider-change-result', approve: true }
-      })
-      bc.close()
-    },
-    async triggerDeny(event) {
-      var bc = new BroadcastChannel(this.channel, broadcastChannelOptions)
-      await bc.postMessage({ data: { type: 'provider-change-result', approve: false } })
-      bc.close()
+      channel: '',
     }
   },
   mounted() {
     this.channel = `torus_provider_change_channel_${new URLSearchParams(window.location.search).get('instanceId')}`
-    var bc = new BroadcastChannel(this.channel, broadcastChannelOptions)
-    bc.onmessage = async ev => {
+    const bc = new BroadcastChannel(this.channel, broadcastChannelOptions)
+    bc.addEventListener('message', async (ev) => {
       const {
         payload: { network, type },
         origin,
-        currentNetwork
+        currentNetwork,
       } = ev.data || {}
       this.origin = origin // origin of tx: website url
       this.network = network
@@ -106,9 +91,23 @@ export default {
       this.currentNetwork = currentNetwork
 
       bc.close()
-    }
+    })
     bc.postMessage({ data: { type: 'popup-loaded' } })
-  }
+  },
+  methods: {
+    async triggerSign() {
+      const bc = new BroadcastChannel(this.channel, broadcastChannelOptions)
+      await bc.postMessage({
+        data: { type: 'provider-change-result', approve: true },
+      })
+      bc.close()
+    },
+    async triggerDeny() {
+      const bc = new BroadcastChannel(this.channel, broadcastChannelOptions)
+      await bc.postMessage({ data: { type: 'provider-change-result', approve: false } })
+      bc.close()
+    },
+  },
 }
 </script>
 
