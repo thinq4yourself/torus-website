@@ -1,1 +1,1 @@
-export { default } from './PhoneRegister'
+export { default } from './PhoneRegister.vue'
