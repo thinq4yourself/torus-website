@@ -16,31 +16,31 @@
           </v-flex>
           <v-flex xs9 sm7 ml-auto mb-2 mr-auto>
             <v-flex xs12>
-              <v-form @submit.prevent lazy-validation v-model="formValid" ref="form" autocomplete="off">
+              <v-form ref="form" v-model="formValid" lazy-validation autocomplete="off" @submit.prevent>
                 <v-layout wrap>
                   <v-flex xs12 mb-4>
                     <v-text-field
+                      v-model="code"
                       outlined
                       type="text"
                       name="code"
-                      v-model="code"
                       class="field"
                       :rules="[rules.required, rules.minLength]"
-                      @input="verifyAccount"
                       :label="t('emailLogin.enterVerification')"
                       single-line
                       autocomplete="one-time-code"
+                      @input="verifyAccount"
                     >
                       <template v-slot:append>
-                        <img class="mr-2" v-if="status === ''" :src="require(`../../../../../public/images/shield.svg`)" height="20px" />
+                        <img v-if="status === ''" class="mr-2" :src="require(`../../../../../public/images/shield.svg`)" height="20px" />
                         <img
+                          v-if="status === 'success'"
                           class="mr-2"
                           :src="require(`../../../../../public/images/valid-check.svg`)"
                           height="20px"
                           :title="t('emailLogin.verifySuccess')"
-                          v-if="status === 'success'"
                         />
-                        <img class="mr-2" v-if="status === 'error'" :src="require(`../../../../../public/images/invalid-check.svg`)" height="20px" />
+                        <img v-if="status === 'error'" class="mr-2" :src="require(`../../../../../public/images/invalid-check.svg`)" height="20px" />
                       </template>
                     </v-text-field>
                     <div class="v-text-field__details mb-6">
@@ -78,8 +78,10 @@
 
 <script>
 import log from 'loglevel'
-import { post } from '../../../../utils/httpHelpers'
+
 import config from '../../../../config'
+import { post } from '../../../../utils/httpHelpers'
+
 export default {
   data() {
     return {
@@ -89,10 +91,15 @@ export default {
       hash: '',
       formValid: true,
       rules: {
-        required: value => !!value || this.t('emailLogin.required'),
-        minLength: value => value.length === 6 || this.t('emailLogin.codeMustBe')
-      }
+        required: (value) => !!value || this.t('emailLogin.required'),
+        minLength: (value) => value.length === 6 || this.t('emailLogin.codeMustBe'),
+      },
     }
+  },
+  mounted() {
+    const { phone, hash } = this.$route.query
+    this.verifier_id = phone
+    this.hash = hash
   },
   methods: {
     async verifyAccount() {
@@ -102,30 +109,25 @@ export default {
           verifier_id: this.verifier_id.replace(/ /g, ''),
           verifier_id_type: 'phone',
           code: this.code,
-          hash: this.hash
+          hash: this.hash,
         })
         this.status = 'success'
         let finalRoutePath = { name: 'torusPhoneLogin', query: { ...this.$route.query, phone: this.verifier_id } }
         if (!Object.prototype.hasOwnProperty.call(this.$route.query, 'state')) finalRoutePath = { path: '/' }
-        this.$router.push(finalRoutePath).catch(_ => {})
-      } catch (err) {
+        this.$router.push(finalRoutePath).catch((_) => {})
+      } catch (error) {
         this.status = 'error'
-        log.error(err)
+        log.error(error)
       }
     },
     async resendCode() {
       await post(`${config.torusVerifierHost}/register`, {
         verifier_id: this.verifier_id.replace(/ /g, ''),
         verifier_id_type: 'phone',
-        hash: this.hash
+        hash: this.hash,
       })
-    }
+    },
   },
-  mounted() {
-    const { phone, hash } = this.$route.query
-    this.verifier_id = phone
-    this.hash = hash
-  }
 }
 </script>
 

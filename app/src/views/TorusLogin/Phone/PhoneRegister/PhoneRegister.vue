@@ -11,23 +11,23 @@
           </v-flex>
           <v-flex xs12 sm12 ml-auto mb-2 pt-4 mr-auto>
             <v-flex xs12>
-              <v-form lazy-validation v-model="formValid" ref="form" @submit.prevent="registerAccount" autocomplete="off">
+              <v-form ref="form" v-model="formValid" lazy-validation autocomplete="off" @submit.prevent="registerAccount">
                 <v-layout wrap>
                   <v-flex xs12>
-                    <vue-tel-input v-model="verifier_id" required mode="international" autocomplete="tel" :autofocus="true"></vue-tel-input>
+                    <VueTelInput v-model="verifier_id" required mode="international" autocomplete="tel" :autofocus="true"></VueTelInput>
                   </v-flex>
                   <v-flex xs12>
                     <v-text-field
+                      v-model="password"
                       outlined
                       name="password"
-                      @click:append.prevent="showPassword = !showPassword"
                       :label="t('emailLogin.enterPassword')"
-                      v-model="password"
                       :append-icon="showPassword ? '$vuetify.icons.visibility_off' : '$vuetify.icons.visibility_on'"
                       :type="showPassword ? 'text' : 'password'"
                       single-line
                       autocomplete="new-password"
                       :rules="[rules.required, rules.minLength]"
+                      @click:append.prevent="showPassword = !showPassword"
                     >
                       <template v-slot:prepend-inner>
                         <img class="mr-2" :src="require(`../../../../../public/images/lock.svg`)" height="20px" />
@@ -36,16 +36,16 @@
                   </v-flex>
                   <v-flex xs12>
                     <v-text-field
+                      v-model="confirmPassword"
                       outlined
                       name="confirmPassword"
                       :label="t('emailLogin.confirmPassword')"
-                      @click:append.prevent="showConfirmPassword = !showConfirmPassword"
-                      v-model="confirmPassword"
                       :append-icon="showConfirmPassword ? '$vuetify.icons.visibility_off' : '$vuetify.icons.visibility_on'"
                       :type="showConfirmPassword ? 'text' : 'password'"
                       single-line
                       :rules="[rules.required, rules.confirmPassword]"
                       autocomplete="new-password"
+                      @click:append.prevent="showConfirmPassword = !showConfirmPassword"
                     >
                       <template v-slot:prepend-inner>
                         <img class="mr-2" :src="require(`../../../../../public/images/lock.svg`)" height="20px" />
@@ -80,7 +80,7 @@
                       {{ t('emailLogin.signUp') }}
                     </v-btn>
                   </v-flex>
-                  <v-flex xs12 py-3 v-if="duplicate">
+                  <v-flex v-if="duplicate" xs12 py-3>
                     <span>
                       {{ t('emailLogin.haveAccount') }}
                       <router-link :to="{ name: 'torusEmailLogin' }">{{ t('emailLogin.here') }}</router-link>
@@ -105,15 +105,17 @@
 </template>
 
 <script>
-import { sha3 } from 'web3-utils'
 import * as ethUtil from 'ethereumjs-util'
-import { VueTelInput } from 'vue-tel-input'
 import log from 'loglevel'
-import { post } from '../../../../utils/httpHelpers'
+import { VueTelInput } from 'vue-tel-input'
+import { sha3 } from 'web3-utils'
+
 import config from '../../../../config'
+import { post } from '../../../../utils/httpHelpers'
+
 export default {
   components: {
-    VueTelInput
+    VueTelInput,
   },
   data() {
     return {
@@ -125,16 +127,16 @@ export default {
       formValid: true,
       duplicate: false,
       rules: {
-        required: value => !!value || this.t('emailLogin.required'),
-        minLength: value => value.length > 8 || this.t('emailLogin.passwordLength'),
-        confirmPassword: value => value === this.password || this.t('emailLogin.passwordNotMatch')
-      }
+        required: (value) => !!value || this.t('emailLogin.required'),
+        minLength: (value) => value.length > 8 || this.t('emailLogin.passwordLength'),
+        confirmPassword: (value) => value === this.password || this.t('emailLogin.passwordNotMatch'),
+      },
     }
   },
   computed: {
     extendedPassword() {
       return ethUtil.stripHexPrefix(sha3(this.password))
-    }
+    },
   },
   methods: {
     async registerAccount() {
@@ -144,15 +146,15 @@ export default {
         await post(`${config.torusVerifierHost}/register`, {
           verifier_id: this.verifier_id.replace(/ /g, ''),
           verifier_id_type: 'phone',
-          hash
+          hash,
         })
-        this.$router.push({ name: 'torusPhoneVerify', query: { ...this.$route.query, phone: this.verifier_id, hash } }).catch(_ => {})
-      } catch (err) {
-        if (err && err.status === 403) this.duplicate = true
-        log.error(err)
+        this.$router.push({ name: 'torusPhoneVerify', query: { ...this.$route.query, phone: this.verifier_id, hash } }).catch((_) => {})
+      } catch (error) {
+        if (error && error.status === 403) this.duplicate = true
+        log.error(error)
       }
-    }
-  }
+    },
+  },
 }
 </script>
 

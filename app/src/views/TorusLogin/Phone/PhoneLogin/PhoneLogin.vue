@@ -14,35 +14,35 @@
           </v-flex>
           <v-flex xs12 sm12 ml-auto mb-2 pt-4 mr-auto>
             <v-flex xs12>
-              <v-form @submit.prevent="login" lazy-validation v-model="formValid" ref="form" autocomplete="off">
+              <v-form ref="form" v-model="formValid" lazy-validation autocomplete="off" @submit.prevent="login">
                 <v-layout wrap>
                   <v-flex xs12 class="phone-login">
-                    <vue-tel-input
+                    <VueTelInput
                       v-model="verifier_id"
                       required
                       mode="international"
                       name="torus_verifier_id_phone"
-                      inputId="verifier_id_phone"
+                      input-id="verifier_id_phone"
                       :placeholder="t('emailLogin.enterPhone')"
                       autocomplete="tel"
                       :autofocus="true"
-                      :validCharactersOnly="true"
-                    ></vue-tel-input>
+                      :valid-characters-only="true"
+                    ></VueTelInput>
                   </v-flex>
                   <v-flex xs12>
                     <v-text-field
+                      v-model="password"
                       outlined
                       name="password"
                       autocomplete="current-password"
                       :placeholder="t('emailLogin.enterPassword')"
-                      @click:append.prevent="showPassword = !showPassword"
                       :rules="[rules.required, rules.minLength]"
-                      v-model="password"
-                      @keyup="resetError"
                       :append-icon="showPassword ? '$vuetify.icons.visibility_off' : '$vuetify.icons.visibility_on'"
                       :type="showPassword ? 'text' : 'password'"
                       class="password"
                       single-line
+                      @click:append.prevent="showPassword = !showPassword"
+                      @keyup="resetError"
                     >
                       <template v-slot:prepend-inner>
                         <img class="mr-2 mt-1" :src="require(`../../../../../public/images/lock.svg`)" height="20px" />
@@ -82,13 +82,13 @@
                       {{ t('emailLogin.loginNoSpace') }}
                     </v-btn>
                   </v-flex>
-                  <v-flex xs12 py-3 v-if="notRegistered">
+                  <v-flex v-if="notRegistered" xs12 py-3>
                     <span>
                       {{ t('emailLogin.notRegistered') }}
                       <router-link :to="{ name: 'torusPhoneRegister' }">{{ t('emailLogin.signUpHere') }}</router-link>
                     </span>
                   </v-flex>
-                  <v-flex xs12 py-3 v-if="incorrectPassword">
+                  <v-flex v-if="incorrectPassword" xs12 py-3>
                     <span>
                       {{ t('emailLogin.pleaseTryAgainPhone') }}
                     </span>
@@ -112,15 +112,17 @@
 </template>
 
 <script>
-import { sha3 } from 'web3-utils'
 import * as ethUtil from 'ethereumjs-util'
-import { VueTelInput } from 'vue-tel-input'
 import log from 'loglevel'
-import { post } from '../../../../utils/httpHelpers'
+import { VueTelInput } from 'vue-tel-input'
+import { sha3 } from 'web3-utils'
+
 import config from '../../../../config'
+import { post } from '../../../../utils/httpHelpers'
+
 export default {
   components: {
-    VueTelInput
+    VueTelInput,
   },
   data() {
     return {
@@ -128,26 +130,26 @@ export default {
       verifier_id: '',
       password: '',
       formValid: true,
-      redirect_uri: '',
+      redirectURI: '',
       state: '',
       notRegistered: false,
       incorrectPassword: false,
       rules: {
-        required: value => !!value || this.t('emailLogin.required'),
-        minLength: value => value.length > 8 || this.t('emailLogin.passwordLength')
-      }
+        required: (value) => !!value || this.t('emailLogin.required'),
+        minLength: (value) => value.length > 8 || this.t('emailLogin.passwordLength'),
+      },
     }
-  },
-  mounted() {
-    const { state, redirect_uri, phone } = this.$route.query
-    this.state = state
-    this.redirect_uri = redirect_uri
-    this.verifier_id = phone || ''
   },
   computed: {
     extendedPassword() {
       return ethUtil.stripHexPrefix(sha3(this.password))
-    }
+    },
+  },
+  mounted() {
+    const { state, redirect_uri: redirectURI, phone } = this.$route.query
+    this.state = state
+    this.redirectURI = redirectURI
+    this.verifier_id = phone || ''
   },
   methods: {
     resetError() {
@@ -159,11 +161,11 @@ export default {
         const data = await post(`${config.torusVerifierHost}/authorize`, {
           verifier_id: this.verifier_id.replace(/ /g, ''),
           verifier_id_type: 'phone',
-          redirect_uri: this.redirect_uri,
+          redirect_uri: this.redirectURI,
           state: this.state,
-          hash: ethUtil.stripHexPrefix(sha3(this.extendedPassword))
+          hash: ethUtil.stripHexPrefix(sha3(this.extendedPassword)),
         })
-        let completeRedirectURI = new URL(data.redirect_uri)
+        const completeRedirectURI = new URL(data.redirect_uri)
         completeRedirectURI.hash = `idtoken=${data.idtoken}&timestamp=${data.timestamp}\
           &verifier_id=${data.verifier_id.replace(/ /g, '')}&extendedPassword=${this.extendedPassword}&state=${data.state}`
         window.location.href = completeRedirectURI.href
@@ -173,11 +175,11 @@ export default {
 
         log.error(error)
       }
-    }
-  }
+    },
+  },
 }
 </script>
 
-<style lang="scss">
+<style scoped lang="scss">
 @import 'PhoneLogin.scss';
 </style>
