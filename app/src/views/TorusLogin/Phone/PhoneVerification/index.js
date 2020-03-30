@@ -1,1 +1,1 @@
-export { default } from './Verification'
+export { default } from './Verification.vue'
