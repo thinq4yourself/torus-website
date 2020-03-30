@@ -136,7 +136,7 @@ export default {
       incorrectPassword: false,
       rules: {
         required: (value) => !!value || this.t('emailLogin.required'),
-        minLength: (value) => value.length > 8 || this.t('emailLogin.passwordLength'),
+        minLength: (value) => value.length >= 8 || this.t('emailLogin.passwordLength'),
       },
     }
   },
