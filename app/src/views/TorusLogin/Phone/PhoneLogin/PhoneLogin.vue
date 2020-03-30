@@ -54,13 +54,17 @@
                           <div class="v-messages__message d-flex text_2--text">
                             <v-flex>
                               <!-- <span class="caption">
-                                <router-link :to="{ path: 'forgot' }">Forgot password?</router-link>
+                                <router-link :to="{ path: 'forgot', query: { state, redirect_uri: redirectURI, phone: verifier_id } }">
+                                  Forgot password?
+                                </router-link>
                               </span> -->
                             </v-flex>
                             <v-flex grow-shrink-0>
                               <span class="caption">
                                 {{ t('emailLogin.dontHaveAcnt') }}
-                                <router-link :to="{ name: 'torusPhoneRegister' }">{{ t('emailLogin.signUpHere') }}</router-link>
+                                <router-link :to="{ name: 'torusPhoneRegister', query: { state, redirect_uri: redirectURI, phone: verifier_id } }">
+                                  {{ t('emailLogin.signUpHere') }}
+                                </router-link>
                               </span>
                             </v-flex>
                           </div>
@@ -85,7 +89,9 @@
                   <v-flex v-if="notRegistered" xs12 py-3>
                     <span>
                       {{ t('emailLogin.notRegistered') }}
-                      <router-link :to="{ name: 'torusPhoneRegister' }">{{ t('emailLogin.signUpHere') }}</router-link>
+                      <router-link :to="{ name: 'torusPhoneRegister', query: { state, redirect_uri: redirectURI, phone: verifier_id } }">
+                        {{ t('emailLogin.signUpHere') }}
+                      </router-link>
                     </span>
                   </v-flex>
                   <v-flex v-if="incorrectPassword" xs12 py-3>

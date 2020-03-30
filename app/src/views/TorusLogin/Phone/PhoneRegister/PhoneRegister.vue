@@ -59,7 +59,9 @@
                             <v-flex grow-shrink-0>
                               <span class="caption">
                                 {{ t('emailLogin.haveAccountQuestion') }}
-                                <router-link :to="{ name: 'torusPhoneLogin' }">{{ t('emailLogin.here') }}</router-link>
+                                <router-link :to="{ name: 'torusPhoneLogin', query: { state, redirect_uri: redirectURI, phone: verifier_id } }">
+                                  {{ t('emailLogin.here') }}
+                                </router-link>
                               </span>
                             </v-flex>
                           </div>
@@ -83,7 +85,9 @@
                   <v-flex v-if="duplicate" xs12 py-3>
                     <span>
                       {{ t('emailLogin.haveAccount') }}
-                      <router-link :to="{ name: 'torusEmailLogin' }">{{ t('emailLogin.here') }}</router-link>
+                      <router-link :to="{ name: 'torusEmailLogin', query: { state, redirect_uri: redirectURI, phone: verifier_id } }">
+                        {{ t('emailLogin.here') }}
+                      </router-link>
                     </span>
                   </v-flex>
                 </v-layout>
@@ -122,13 +126,15 @@ export default {
       password: '',
       confirmPassword: '',
       verifier_id: '',
+      redirectURI: '',
+      state: '',
       showPassword: false,
       showConfirmPassword: false,
       formValid: true,
       duplicate: false,
       rules: {
         required: (value) => !!value || this.t('emailLogin.required'),
-        minLength: (value) => value.length > 8 || this.t('emailLogin.passwordLength'),
+        minLength: (value) => value.length >= 8 || this.t('emailLogin.passwordLength'),
         confirmPassword: (value) => value === this.password || this.t('emailLogin.passwordNotMatch'),
       },
     }
@@ -137,6 +143,12 @@ export default {
     extendedPassword() {
       return ethUtil.stripHexPrefix(sha3(this.password))
     },
+  },
+  mounted() {
+    const { state, redirect_uri: redirectURI, phone } = this.$route.query
+    this.state = state
+    this.redirectURI = redirectURI
+    this.verifier_id = phone || ''
   },
   methods: {
     async registerAccount() {

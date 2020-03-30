@@ -25,7 +25,7 @@
                       type="text"
                       name="code"
                       class="field"
-                      :rules="[rules.required, rules.minLength]"
+                      :rules="[rules.required, rules.exactLength]"
                       :label="t('emailLogin.enterVerification')"
                       single-line
                       autocomplete="one-time-code"
@@ -92,7 +92,7 @@ export default {
       formValid: true,
       rules: {
         required: (value) => !!value || this.t('emailLogin.required'),
-        minLength: (value) => value.length === 6 || this.t('emailLogin.codeMustBe'),
+        exactLength: (value) => value.length === 6 || this.t('emailLogin.codeMustBe'),
       },
     }
   },
