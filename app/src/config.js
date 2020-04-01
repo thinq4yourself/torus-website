@@ -7,7 +7,7 @@ const redirectURI = `${baseUrl}/redirect`
 export default {
   baseUrl,
   baseRoute,
-  torusVerifierHost: 'https://verifier.tor.us',
+  torusVerifierHost: 'https://verifier.dev.tor.us',
   // torusVerifierHost: 'http://localhost:5050',
   commonApiHost: 'https://common-api.tor.us',
   simplexApiHost: 'https://simplex-api.tor.us',

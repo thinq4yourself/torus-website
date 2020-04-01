@@ -12,7 +12,9 @@ import { fakeStream, selectChainId } from './utils/utils'
 // Make this a class. Use ES6
 class TorusExtended extends Torus {
   constructor() {
-    super()
+    super({
+      metadataHost: 'https://recoverer.dev.tor.us',
+    })
     this.instanceId = randomId()
 
     this.setupMultiplex = setupMultiplex
