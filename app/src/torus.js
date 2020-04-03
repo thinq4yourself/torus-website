@@ -13,7 +13,7 @@ import { fakeStream, selectChainId } from './utils/utils'
 class TorusExtended extends Torus {
   constructor() {
     super({
-      metadataHost: 'https://recoverer.dev.tor.us',
+      metadataHost: config.torusMetadataHost,
     })
     this.instanceId = randomId()
 
